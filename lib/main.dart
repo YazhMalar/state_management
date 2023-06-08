@@ -1,89 +1,93 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:redux/redux.dart';
 import 'package:state_management/counter_bloc.dart';
+import 'actions.dart';
+import 'states.dart' as appStore;
 
 void main() {
-  runApp(const MyApp());
+  final store = appStore.createStore();
+
+  runApp(FlutterReduxApp(
+    title: 'Flutter Redux Demo',
+    store: store,
+  ));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class FlutterReduxApp extends StatelessWidget {
+  final Store<int> store;
   final String title;
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  final counterBloc = CounterBloc();
-  @override
-  void dispose() {
-    counterBloc.dispose();
-    super.dispose();
-  }
+  FlutterReduxApp({
+    required this.store,
+    required this.title,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+    return StoreProvider<int>(
+      store: store,
+      child: MaterialApp(
+        theme: ThemeData.dark(),
+        title: title,
+        home: Scaffold(
+          appBar: AppBar(
+            title: Text(title),
+          ),
+          body: Center(
+            child: StoreConnector<int, String>(
+              converter: (store) => store.state.toString(),
+              builder: (context, count) {
+                return Center(
+                  child: Text(
+                    'The button has been pushed this many times: $count',
+                  ),
+                );
+              },
             ),
-            StreamBuilder(
-                stream: counterBloc.counterStream,
-                initialData: 0,
-                builder: (context, snapshot) {
-                  return Text(
-                    '${snapshot.data}',
-                    style: Theme.of(context).textTheme.headlineMedium,
+          ),
+          floatingActionButton: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              StoreConnector<int, VoidCallback>(
+                converter: (store) {
+                  return () => store.dispatch(IncrementAction(counter));
+                },
+                builder: (context, callback) {
+                  return FloatingActionButton(
+                    onPressed: callback,
+                    tooltip: 'Increment',
+                    child: Icon(Icons.add),
                   );
-                }),
-          ],
+                },
+              ),
+              StoreConnector<int, VoidCallback>(
+                converter: (store) {
+                  return () => store.dispatch(ResetAction(counter));
+                },
+                builder: (context, callback) {
+                  return FloatingActionButton(
+                    onPressed: callback,
+                    tooltip: 'Increment',
+                    child: Icon(Icons.refresh),
+                  );
+                },
+              ),
+              StoreConnector<int, VoidCallback>(
+                converter: (store) {
+                  return () => store.dispatch(DecrementAction(counter));
+                },
+                builder: (context, callback) {
+                  return FloatingActionButton(
+                    onPressed: callback,
+                    tooltip: 'Increment',
+                    child: Icon(Icons.remove),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          FloatingActionButton(
-            onPressed: () {
-              counterBloc.eventSink.add(CounterAction.Increament);
-            },
-            child: const Icon(Icons.add),
-          ),
-          FloatingActionButton(
-            onPressed: () {
-              counterBloc.eventSink.add(CounterAction.Reset);
-            },
-            child: const Icon(Icons.restart_alt_outlined),
-          ),
-          FloatingActionButton(
-            onPressed: () {
-              counterBloc.eventSink.add(CounterAction.Decreament);
-            },
-            child: Icon(Icons.remove),
-          ),
-        ],
       ),
     );
   }
